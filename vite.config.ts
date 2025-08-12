@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+const repoBase = process.env.NODE_ENV === 'production' ? '/todo-list/' : '/'
+
 export default defineConfig({
+  base: repoBase,
   plugins: [
     react(),
     VitePWA({
@@ -17,8 +20,8 @@ export default defineConfig({
         theme_color: '#242424',
         background_color: '#242424',
         display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        start_url: repoBase,
+        scope: repoBase,
         lang: 'pt-BR',
         icons: [
           { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
