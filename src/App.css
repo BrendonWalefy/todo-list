@@ -1,0 +1,158 @@
+/* Layout base do app */
+#root {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.app__title {
+  text-align: center;
+  margin: 0 0 1rem 0;
+}
+
+.todo-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.todo-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+}
+
+.todo-add {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+}
+
+.board-meta {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.counter {
+  opacity: 0.8;
+}
+
+/* Board */
+.board {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%);
+  min-height: 260px;
+}
+
+.column__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.column__title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.column__count {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.column__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.column--todo {
+  border-color: rgba(100,108,255,0.35);
+}
+.column--doing {
+  border-color: rgba(255,184,77,0.35);
+}
+.column--done {
+  border-color: rgba(72,187,120,0.35);
+}
+
+/* Cards */
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+}
+
+.card__body {
+  flex: 1;
+}
+
+.card__title {
+  text-align: left;
+}
+
+.card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.card__action {
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.card__action.delete {
+  border-color: rgba(255, 99, 99, 0.45);
+}
+
+.empty {
+  text-align: center;
+  opacity: 0.7;
+  padding: 1rem 0;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clear-completed {
+  background: #2a2a2a;
+}
+
+@media (max-width: 900px) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Pequenos refinamentos para botões na barra */
+.board-meta .footer-actions {
+  gap: 0.5rem;
+}
