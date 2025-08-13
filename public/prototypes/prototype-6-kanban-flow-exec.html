@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protótipo: Kanban — Foco / Flow / Exec</title>
+    <style>
+      :root {
+        --bg1: #0b1220;
+        --bg2: #0f172a;
+        --panel: rgba(255,255,255,0.06);
+        --panel-border: rgba(255,255,255,0.18);
+        --text: #e6eef9;
+        --muted: #9fb2d3;
+        --accent: #60a5fa;
+        --danger: #ef4444;
+        --warn: #f59e0b;
+        --ok: #22c55e;
+      }
+      body[data-theme="light"] {
+        --bg1: #e9eef5;
+        --bg2: #f7fafc;
+        --panel: rgba(255,255,255,0.82);
+        --panel-border: rgba(15,23,42,0.12);
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        background: radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,0.08), transparent 60%),
+                    linear-gradient(160deg, var(--bg1), var(--bg2));
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        gap: 12px;
+        padding: 20px;
+      }
+      header {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; }
+      .dot { width: 10px; height: 10px; border-radius: 999px; background: radial-gradient(circle at 30% 30%, #7dd3fc, #a78bfa); box-shadow: 0 0 10px rgba(96,165,250,0.6); }
+      .actions { display: flex; gap: 8px; }
+      .btn { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--panel-border); background: var(--panel); color: var(--text); text-decoration: none; backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%); }
+      .btn:hover { border-color: rgba(255,255,255,0.3); }
+
+      .toolbar { display: none; }
+      .modes { display: inline-flex; gap: 8px; padding: 6px; border-radius: 12px; border: 1px solid var(--panel-border); background: var(--panel); }
+      .modes button { padding: 8px 12px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--text); cursor: pointer; }
+      .modes button.active { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.35); box-shadow: 0 0 0 2px rgba(96,165,250,0.12) inset; }
+      .toggles { display: inline-flex; gap: 8px; align-items: center; }
+      .toggle { display: inline-flex; gap: 6px; align-items: center; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--panel-border); background: var(--panel); }
+      .theme-switch { display: inline-flex; gap: 6px; padding: 6px; border-radius: 10px; border: 1px solid var(--panel-border); background: var(--panel); }
+      .theme-switch button { padding: 6px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text); cursor: pointer; }
+      .theme-switch button.active { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.35); }
+      .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--panel-border); background: var(--panel); color: var(--text); cursor: pointer; }
+      .icon-btn svg { width: 16px; height: 16px; }
+      .icon-btn:hover { border-color: rgba(255,255,255,0.3); }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        align-items: start;
+        position: relative;
+      }
+
+      .board-actions { display: flex; align-items: center; gap: 8px; }
+
+      /* Board */
+      .board { display: grid; grid-auto-flow: column; grid-auto-columns: 320px; gap: 14px; overflow-x: auto; }
+      .column {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 14px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        min-height: 420px;
+      }
+      .col-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .col-title { font-weight: 700; letter-spacing: 0.3px; }
+      .wip { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+      .wip .tag { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.08); color: var(--text); }
+      .wip.over .tag { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.5); color: #fecaca; }
+
+      .cards { display: grid; gap: 8px; }
+      .card {
+        position: relative;
+        padding: 10px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+        border: 1px solid var(--panel-border);
+      }
+      .card .title { font-weight: 600; margin-bottom: 4px; }
+      .card .meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+      .badge { font-size: 11px; padding: 2px 6px; border-radius: 999px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.08); color: var(--text); }
+      .badge.blocked { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.5); color: #fecaca; }
+      .badge.stale { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.5); color: #fde68a; }
+
+      /* Aging heatmap by data-age days */
+      .card[data-age="0"], .card[data-age="1"], .card[data-age="2"] { outline: 0 solid transparent; }
+      .card[data-age="3"], .card[data-age="4"] { box-shadow: 0 0 0 2px rgba(99,102,241,0.18) inset; }
+      .card[data-age="5"], .card[data-age="6"] { box-shadow: 0 0 0 2px rgba(245,158,11,0.22) inset; }
+      .card[data-age="7"], .card[data-age="8"], .card[data-age="9"], .card[data-age="10"] { box-shadow: 0 0 0 2px rgba(239,68,68,0.28) inset; }
+
+      /* Dependencies removed in this prototype */
+
+      /* Exec view */
+      .exec { display: none; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .tile { padding: 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--panel-border); }
+      .tile .label { font-size: 12px; color: var(--muted); }
+      .tile .value { font-size: 22px; font-weight: 700; }
+      .forecast { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+      /* Modes visibility */
+      [data-mode="exec"] .board { display: none; }
+      [data-mode="exec"] .exec { display: grid; }
+      [data-mode="focus"] .card:not(.mine) { display: none; }
+
+      @media (max-width: 980px) { .exec { grid-template-columns: 1fr; } .forecast { grid-template-columns: 1fr; } }
+
+      /* Modals */
+      .modal-backdrop { position: fixed; inset: 0; background: rgba(2,6,23,0.5); display: none; align-items: center; justify-content: center; z-index: 50; }
+      .modal-backdrop.open { display: flex; }
+      .modal { width: min(520px, 90vw); padding: 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--panel-border); backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%); display: grid; gap: 10px; }
+      .modal h2 { margin: 0 0 4px; font-size: 16px; }
+      .form-row { display: grid; gap: 6px; }
+      .form-row.inline { grid-template-columns: 1fr 160px; gap: 10px; }
+      .modal input[type="text"], .modal input[type="number"], .modal select { padding: 10px; border-radius: 10px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.08); color: var(--text); }
+      .modal .row { display: grid; grid-template-columns: 1fr 100px auto auto auto; gap: 8px; align-items: center; }
+      .modal .row.new { opacity: 0.9; }
+      .modal .row .remove { width: 32px; height: 32px; }
+      .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+      .board-actions { position: sticky; top: 8px; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 12px; border: 1px solid var(--panel-border); background: var(--panel); backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%); }
+    </style>
+  </head>
+  <body data-mode="flow" data-theme="dark">
+    <header>
+      <div class="brand">
+        <div class="dot"></div>
+        <h1>Kanban — Foco / Flow / Exec</h1>
+      </div>
+      <div class="actions">
+        <a class="btn" href="./index.html">Voltar</a>
+        <a class="btn" href="../..">Abrir App</a>
+        <div class="theme-switch" role="group" aria-label="Tema">
+          <button id="theme-dark" class="active" aria-pressed="true" title="Tema escuro">🌙</button>
+          <button id="theme-light" aria-pressed="false" title="Tema claro">☀️</button>
+        </div>
+        <button class="icon-btn" id="btn-manage-cols" title="Gerenciar colunas" aria-label="Gerenciar colunas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 3.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 3.6a1.65 1.65 0 0 0 1-1.51V2a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 16 3.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.4 8c0 .59.22 1.16.6 1.6.38.44.6 1.01.6 1.6s-.22 1.16-.6 1.6a1.65 1.65 0 0 0-.6 1.6z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+    <section class="toolbar">
+      <div class="modes">
+        <button data-mode="focus" aria-pressed="false">Foco</button>
+        <button data-mode="flow" class="active" aria-pressed="true">Flow</button>
+        <button data-mode="exec" aria-pressed="false">Exec</button>
+      </div>
+      <div class="toggles">
+        <label class="toggle"><input id="toggle-deps" type="checkbox" />Dependências</label>
+        <label class="toggle"><input id="toggle-stale" type="checkbox" checked />Marcar stale</label>
+      </div>
+    </section>
+    <main>
+      <div class="board-actions">
+        <button class="icon-btn" id="btn-add-card" title="Adicionar card" aria-label="Adicionar card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+        <div class="modes">
+          <button data-mode="focus" aria-pressed="false">Foco</button>
+          <button data-mode="flow" class="active" aria-pressed="true">Flow</button>
+          <button data-mode="exec" aria-pressed="false">Exec</button>
+        </div>
+        <label class="toggle"><input id="toggle-stale" type="checkbox" checked />Marcar stale</label>
+      </div>
+
+      <section class="board">
+        <div class="column" data-wip-limit="3">
+          <div class="col-head">
+            <div class="col-title">A Fazer</div>
+            <div class="wip"><span class="tag js-wip">0/3</span></div>
+          </div>
+          <div class="cards">
+            <div class="card mine" id="t-101" data-id="t-101" data-age="2" data-depends="">
+              <div class="title">Validar hipóteses com 10 entrevistas</div>
+              <div class="meta"><span class="badge">UX</span><span>Hoje</span><span class="badge">p50 5d</span></div>
+            </div>
+            <div class="card" id="t-102" data-id="t-102" data-age="5" data-depends="t-201">
+              <div class="title">Protótipo clicável (3 modos)</div>
+              <div class="meta"><span class="badge">UI</span><span>2d</span></div>
+            </div>
+            <div class="card" id="t-103" data-id="t-103" data-age="7" data-depends="">
+              <div class="title">Importar CSV Trello</div>
+              <div class="meta"><span class="badge stale">stale</span><span>7d</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="column" data-wip-limit="2">
+          <div class="col-head">
+            <div class="col-title">Em Progresso</div>
+            <div class="wip"><span class="tag js-wip">0/2</span></div>
+          </div>
+          <div class="cards">
+            <div class="card mine" id="t-201" data-id="t-201" data-age="4" data-depends="">
+              <div class="title">Detecção de aging e WIP</div>
+              <div class="meta"><span class="badge">FE</span><span>4d</span></div>
+            </div>
+            <div class="card blocked" id="t-202" data-id="t-202" data-age="6" data-depends="t-301">
+              <div class="title">Overlay de dependências</div>
+              <div class="meta"><span class="badge blocked">bloqueado</span><span>6d</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="column" data-wip-limit="4">
+          <div class="col-head">
+            <div class="col-title">Concluídas</div>
+            <div class="wip"><span class="tag js-wip">0/4</span></div>
+          </div>
+          <div class="cards">
+            <div class="card" id="t-301" data-id="t-301" data-age="1" data-depends="">
+              <div class="title">KPIs principais no Exec</div>
+              <div class="meta"><span class="badge">PM</span><span>Ontem</span></div>
+            </div>
+            <div class="card" id="t-302" data-id="t-302" data-age="3" data-depends="">
+              <div class="title">Walk the board (direita→esquerda)</div>
+              <div class="meta"><span class="badge">Flow</span><span>Ontem</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="exec">
+        <div class="tile"><div class="label">WIP atual</div><div class="value" id="kpi-wip">—</div></div>
+        <div class="tile"><div class="label">Throughput (7/14/30d)</div><div class="value">6 / 11 / 22</div></div>
+        <div class="tile"><div class="label">Taxa de bloqueio</div><div class="value" id="kpi-block">—</div></div>
+        <div class="tile forecast">
+          <div>
+            <div class="label">Forecast (p50)</div>
+            <div class="value">5 itens em 10 dias</div>
+            <div class="hint">Faixa de confiança com base no histórico</div>
+          </div>
+          <div>
+            <div class="label">Forecast (p85)</div>
+            <div class="value">5 itens em 13 dias</div>
+            <div class="hint">Considera variabilidade maior</div>
+          </div>
+          <div>
+            <div class="label">Forecast (p95)</div>
+            <div class="value">5 itens em 16 dias</div>
+            <div class="hint">Cenário conservador</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const body = document.body;
+      const modeButtons = document.querySelectorAll('.modes button');
+      const staleToggle = document.getElementById('toggle-stale');
+      const themeDarkBtn = document.getElementById('theme-dark');
+      const themeLightBtn = document.getElementById('theme-light');
+      const addCardBtn = document.getElementById('btn-add-card');
+      const manageColsBtn = document.getElementById('btn-manage-cols');
+
+      function setMode(mode) {
+        body.setAttribute('data-mode', mode);
+        modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+        updateAll();
+      }
+
+      modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => setMode(btn.dataset.mode));
+      });
+
+      function setTheme(theme) {
+        body.setAttribute('data-theme', theme);
+        themeDarkBtn.classList.toggle('active', theme === 'dark');
+        themeLightBtn.classList.toggle('active', theme === 'light');
+        themeDarkBtn.setAttribute('aria-pressed', String(theme === 'dark'));
+        themeLightBtn.setAttribute('aria-pressed', String(theme === 'light'));
+      }
+      themeDarkBtn.addEventListener('click', () => setTheme('dark'));
+      themeLightBtn.addEventListener('click', () => setTheme('light'));
+
+      staleToggle.addEventListener('change', () => {
+        document.querySelectorAll('.card').forEach(card => {
+          const age = Number(card.getAttribute('data-age') || '0');
+          const isStale = age >= 7;
+          const staleBadge = card.querySelector('.badge.stale');
+          if (staleToggle.checked && isStale) {
+            if (!staleBadge) {
+              const b = document.createElement('span');
+              b.className = 'badge stale';
+              b.textContent = 'stale';
+              const meta = card.querySelector('.meta');
+              meta?.insertBefore(b, meta.firstChild);
+            }
+          } else if (staleBadge) {
+            staleBadge.remove();
+          }
+        });
+      });
+
+      function updateWip() {
+        document.querySelectorAll('.column').forEach(col => {
+          const limit = Number(col.getAttribute('data-wip-limit') || '0');
+          const visibleCards = Array.from(col.querySelectorAll('.card')).filter(c => c.offsetParent !== null);
+          const count = visibleCards.length;
+          const wip = col.querySelector('.wip');
+          const tag = col.querySelector('.js-wip');
+          if (tag) tag.textContent = `${count}/${limit}`;
+          if (wip) wip.classList.toggle('over', count > limit && limit > 0);
+        });
+        const totalWip = Array.from(document.querySelectorAll('.card')).filter(c => c.offsetParent !== null).length;
+        const blocked = document.querySelectorAll('.card.blocked').length;
+        const kpiWip = document.getElementById('kpi-wip');
+        const kpiBlock = document.getElementById('kpi-block');
+        if (kpiWip) kpiWip.textContent = String(totalWip);
+        if (kpiBlock) kpiBlock.textContent = `${blocked} bloqueado(s)`;
+      }
+
+      function updateAll() {
+        updateWip();
+      }
+
+      const ro = new ResizeObserver(() => {});
+      ro.observe(document.querySelector('main'));
+      window.addEventListener('load', () => {
+        // Preferência do sistema
+        const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        setTheme(prefersLight ? 'light' : 'dark');
+        updateAll();
+      });
+      window.addEventListener('resize', updateDependencies);
+
+      // ===== Modais =====
+      function createModal(id, contentHtml) {
+        let el = document.getElementById(id);
+        if (!el) {
+          el = document.createElement('div');
+          el.id = id;
+          el.className = 'modal-backdrop';
+          el.innerHTML = contentHtml;
+          document.body.appendChild(el);
+        }
+        return el;
+      }
+
+      // Modal: Novo Card
+      const modalCard = createModal('modal-card', `
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-card-title">
+          <h2 id="modal-card-title">Novo card</h2>
+          <div class="form-row"><label>Título<br/><input id="card-title" type="text" placeholder="Ex.: Implementar login"/></label></div>
+          <div class="form-row inline">
+            <label>Coluna<br/>
+              <select id="card-column"></select>
+            </label>
+            <label>Idade (dias)<br/>
+              <input id="card-age" type="number" min="0" value="0" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label><input id="card-mine" type="checkbox"/> Atribuir a mim</label>
+            <label><input id="card-blocked" type="checkbox"/> Bloqueado</label>
+          </div>
+          <div class="actions">
+            <button class="btn" id="card-cancel">Cancelar</button>
+            <button class="btn" id="card-save">Adicionar</button>
+          </div>
+        </div>
+      `);
+
+      function openModal(el) { el.classList.add('open'); }
+      function closeModal(el) { el.classList.remove('open'); }
+
+      function populateColumnSelect() {
+        const sel = modalCard.querySelector('#card-column');
+        sel.innerHTML = '';
+        document.querySelectorAll('.column').forEach((col, idx) => {
+          const name = col.querySelector('.col-title')?.textContent || `Coluna ${idx+1}`;
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = name;
+          sel.appendChild(opt);
+        });
+      }
+
+      function nextCardNumericId() {
+        const ids = Array.from(document.querySelectorAll('.card')).map(c => {
+          const id = (c.getAttribute('data-id') || '').replace('t-','');
+          return Number(id) || 0;
+        });
+        return (ids.length ? Math.max(...ids) : 300) + 1;
+      }
+
+      function createCardElement({ title, age, mine, blocked }) {
+        const idNum = nextCardNumericId();
+        const id = `t-${idNum}`;
+        const card = document.createElement('div');
+        card.className = `card${mine ? ' mine' : ''}${blocked ? ' blocked' : ''}`;
+        card.id = id;
+        card.setAttribute('data-id', id);
+        card.setAttribute('data-age', String(age));
+        card.setAttribute('data-depends', '');
+        const metaBadges = [];
+        if (blocked) metaBadges.push('<span class="badge blocked">bloqueado</span>');
+        const meta = `${metaBadges.join('')}<span>${age}d</span>`;
+        card.innerHTML = `
+          <div class="title"></div>
+          <div class="meta">${meta}</div>
+        `;
+        card.querySelector('.title').textContent = title;
+        return card;
+      }
+
+      addCardBtn.addEventListener('click', () => {
+        populateColumnSelect();
+        modalCard.querySelector('#card-title').value = '';
+        modalCard.querySelector('#card-age').value = '0';
+        modalCard.querySelector('#card-mine').checked = true;
+        modalCard.querySelector('#card-blocked').checked = false;
+        openModal(modalCard);
+      });
+      modalCard.querySelector('#card-cancel').addEventListener('click', () => closeModal(modalCard));
+      modalCard.addEventListener('click', (e) => { if (e.target === modalCard) closeModal(modalCard); });
+      modalCard.querySelector('#card-save').addEventListener('click', () => {
+        const title = modalCard.querySelector('#card-title').value.trim();
+        if (!title) return;
+        const idx = Number(modalCard.querySelector('#card-column').value || '0');
+        const age = Number(modalCard.querySelector('#card-age').value || '0');
+        const mine = modalCard.querySelector('#card-mine').checked;
+        const blocked = modalCard.querySelector('#card-blocked').checked;
+        const cols = Array.from(document.querySelectorAll('.column'));
+        const targetCol = cols[idx] || cols[0];
+        const list = targetCol.querySelector('.cards');
+        const el = createCardElement({ title, age, mine, blocked });
+        list.appendChild(el);
+        closeModal(modalCard);
+        updateAll();
+      });
+
+      // Modal: Gerenciar colunas
+      const modalCols = createModal('modal-cols', `
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-cols-title">
+          <h2 id="modal-cols-title">Gerenciar colunas</h2>
+          <div id="cols-list" class="form-row"></div>
+          <div class="actions">
+            <button class="btn" id="col-add">Adicionar coluna</button>
+            <span style="flex:1"></span>
+            <button class="btn" id="col-cancel">Fechar</button>
+            <button class="btn" id="col-save">Salvar</button>
+          </div>
+        </div>
+      `);
+
+      function buildColsEditor() {
+        const list = modalCols.querySelector('#cols-list');
+        list.innerHTML = '';
+        document.querySelectorAll('.column').forEach((col, idx) => {
+          const row = document.createElement('div');
+          row.className = 'row';
+          row.dataset.index = String(idx);
+          const title = col.querySelector('.col-title')?.textContent || `Coluna ${idx+1}`;
+          const wip = Number(col.getAttribute('data-wip-limit') || '0');
+          row.innerHTML = `
+            <input class="col-name" type="text" value="${title}" />
+            <input class="col-wip" type="number" min="0" value="${wip}" />
+            <button class="icon-btn move-left" title="Mover para a esquerda" aria-label="Mover para a esquerda">◀</button>
+            <button class="icon-btn move-right" title="Mover para a direita" aria-label="Mover para a direita">▶</button>
+            <button class="icon-btn remove" title="Remover" aria-label="Remover">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </button>
+          `;
+          row.querySelector('.remove').addEventListener('click', () => {
+            row.dataset.remove = 'true';
+            row.style.opacity = '0.6';
+          });
+          row.querySelector('.move-left').addEventListener('click', () => {
+            const idx = Number(row.dataset.index || '0');
+            if (idx <= 0) return;
+            const board = document.querySelector('.board');
+            const cols = Array.from(document.querySelectorAll('.column'));
+            board.insertBefore(cols[idx], cols[idx-1]);
+            buildColsEditor();
+            updateAll();
+          });
+          row.querySelector('.move-right').addEventListener('click', () => {
+            const idx = Number(row.dataset.index || '0');
+            const cols = Array.from(document.querySelectorAll('.column'));
+            if (idx >= cols.length - 1) return;
+            const board = document.querySelector('.board');
+            board.insertBefore(cols[idx+1], cols[idx]);
+            buildColsEditor();
+            updateAll();
+          });
+          list.appendChild(row);
+        });
+      }
+
+      manageColsBtn.addEventListener('click', () => {
+        buildColsEditor();
+        openModal(modalCols);
+      });
+      modalCols.querySelector('#col-cancel').addEventListener('click', () => closeModal(modalCols));
+      modalCols.addEventListener('click', (e) => { if (e.target === modalCols) closeModal(modalCols); });
+      modalCols.querySelector('#col-add').addEventListener('click', () => {
+        const list = modalCols.querySelector('#cols-list');
+        const row = document.createElement('div');
+        row.className = 'row new';
+        row.dataset.new = 'true';
+        row.innerHTML = `
+          <input class="col-name" type="text" value="Nova coluna" />
+          <input class="col-wip" type="number" min="0" value="3" />
+          <button class="icon-btn move-left" title="Mover para a esquerda" aria-label="Mover para a esquerda">◀</button>
+          <button class="icon-btn move-right" title="Mover para a direita" aria-label="Mover para a direita">▶</button>
+          <button class="icon-btn remove" title="Remover" aria-label="Remover">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+          </button>
+        `;
+        row.querySelector('.remove').addEventListener('click', () => {
+          row.remove();
+        });
+        row.querySelector('.move-left').addEventListener('click', () => {
+          const prev = row.previousElementSibling;
+          if (prev) row.parentElement.insertBefore(row, prev);
+        });
+        row.querySelector('.move-right').addEventListener('click', () => {
+          const next = row.nextElementSibling;
+          if (next) row.parentElement.insertBefore(next, row);
+        });
+        list.appendChild(row);
+      });
+
+      modalCols.querySelector('#col-save').addEventListener('click', () => {
+        const list = modalCols.querySelector('#cols-list');
+        const rows = Array.from(list.querySelectorAll('.row'));
+        const board = document.querySelector('.board');
+        const cols = Array.from(document.querySelectorAll('.column'));
+        // Apply removals and updates
+        rows.forEach(row => {
+          const isNew = row.dataset.new === 'true';
+          const name = row.querySelector('.col-name').value.trim() || 'Coluna';
+          const wip = Number(row.querySelector('.col-wip').value || '0');
+          if (isNew) {
+            const column = document.createElement('div');
+            column.className = 'column';
+            column.setAttribute('data-wip-limit', String(wip));
+            column.innerHTML = `
+              <div class="col-head"><div class="col-title"></div><div class="wip"><span class="tag js-wip">0/${wip}</span></div></div>
+              <div class="cards"></div>
+            `;
+            column.querySelector('.col-title').textContent = name;
+            board.appendChild(column); // always add to the end
+            return;
+          }
+          const idx = Number(row.dataset.index || '-1');
+          if (idx < 0 || idx >= cols.length) return;
+          const col = cols[idx];
+          if (row.dataset.remove === 'true') {
+            // move cards to first column
+            const first = cols[0] === col ? cols[1] || cols[0] : cols[0];
+            const firstList = first.querySelector('.cards');
+            Array.from(col.querySelectorAll('.card')).forEach(c => firstList.appendChild(c));
+            col.remove();
+          } else {
+            col.setAttribute('data-wip-limit', String(wip));
+            const titleEl = col.querySelector('.col-title');
+            if (titleEl) titleEl.textContent = name;
+            const tag = col.querySelector('.js-wip');
+            if (tag) tag.textContent = `${(col.querySelectorAll('.card').length)}/${wip}`;
+          }
+        });
+        closeModal(modalCols);
+        updateAll();
+      });
+    </script>
+  </body>
+  </html>
+
+

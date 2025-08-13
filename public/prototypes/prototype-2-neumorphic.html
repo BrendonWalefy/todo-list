@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protótipo: Neumórfico</title>
+    <style>
+      :root {
+        --bg: #e9eef5;
+        --card: #f4f7fb;
+        --shadow: #c7cfdb;
+        --text: #1f2937;
+        --muted: #475569;
+        --accent: #2563eb;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+        color: var(--text);
+        background: radial-gradient(50% 40% at 50% 0%, rgba(255,255,255,0.6), transparent 60%), var(--bg);
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 16px;
+        padding: 24px;
+      }
+      header { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+      h1 { margin: 0; font-size: 18px; letter-spacing: 0.2px; color: var(--muted); }
+      .btn { padding: 10px 16px; border-radius: 14px; color: var(--text); text-decoration: none; background: var(--card); box-shadow: 6px 6px 14px #d1d8e3, -6px -6px 14px #ffffff; border: 1px solid rgba(0,0,0,0.04); }
+
+      main { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+      .panel { padding: 16px; border-radius: 18px; background: var(--card); box-shadow: 10px 10px 24px #d1d8e3, -10px -10px 24px #ffffff; border: 1px solid rgba(0,0,0,0.04); }
+      .panel h2 { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+      .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .kpi { padding: 12px; border-radius: 14px; background: var(--card); box-shadow: inset 6px 6px 12px #d1d8e3, inset -6px -6px 12px #ffffff; }
+      .kpi .label { font-size: 12px; color: var(--muted); }
+      .kpi .value { font-size: 20px; font-weight: 700; }
+
+      .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .column { display: grid; grid-template-rows: auto 1fr; gap: 12px; padding: 12px; border-radius: 18px; background: var(--card); box-shadow: 12px 12px 26px #d1d8e3, -12px -12px 26px #ffffff; border: 1px solid rgba(0,0,0,0.04); }
+      .col-head { display: flex; align-items: center; justify-content: space-between; }
+      .col-title { font-weight: 700; color: var(--text); }
+      .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #e2e8f0; color: #0f172a; box-shadow: 4px 4px 10px #d1d8e3, -4px -4px 10px #ffffff; }
+
+      .cards { display: grid; gap: 12px; }
+      .card { padding: 12px; border-radius: 16px; background: var(--card); box-shadow: inset 5px 5px 10px #d1d8e3, inset -5px -5px 10px #ffffff; border: 1px solid rgba(0,0,0,0.04); }
+      .card .title { font-weight: 600; margin-bottom: 4px; }
+      .card .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; }
+
+      .add { margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--card); text-decoration: none; color: var(--muted); box-shadow: 6px 6px 14px #d1d8e3, -6px -6px 14px #ffffff; border: 1px solid rgba(0,0,0,0.04); }
+      .add:hover { color: var(--text); }
+
+      .quick-add { display: grid; gap: 8px; }
+      .quick-add input { padding: 10px 12px; border-radius: 12px; border: none; outline: none; background: var(--card); box-shadow: inset 6px 6px 12px #d1d8e3, inset -6px -6px 12px #ffffff; color: var(--text); }
+      .quick-add button { padding: 10px 12px; border-radius: 12px; border: none; background: #e2e8f0; color: #0f172a; box-shadow: 6px 6px 14px #d1d8e3, -6px -6px 14px #ffffff; cursor: pointer; }
+
+      @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+      @media (max-width: 720px) { .board { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Kanban — Neumórfico</h1>
+      <div class="actions">
+        <a class="btn" href="./index.html">Voltar</a>
+        <a class="btn" href="/">Abrir App</a>
+      </div>
+    </header>
+    <main>
+      <aside class="panel">
+        <h2>Adicionar</h2>
+        <div class="quick-add">
+          <input placeholder="Escreva uma tarefa..." />
+          <button>Adicionar</button>
+        </div>
+      </aside>
+      <section class="board">
+        <div class="column">
+          <div class="col-head"><div class="col-title">A Fazer</div><span class="badge">9</span></div>
+          <div class="cards">
+            <div class="card"><div class="title">Criar fluxo de onboarding</div><div class="meta"><span>UX</span><span>Hoje</span></div></div>
+            <div class="card"><div class="title">Definir tokens de design</div><div class="meta"><span>UI</span><span>Amanhã</span></div></div>
+          </div>
+          <a href="#" class="add">+ Adicionar tarefa</a>
+        </div>
+        <div class="column">
+          <div class="col-head"><div class="col-title">Em Progresso</div><span class="badge">5</span></div>
+          <div class="cards">
+            <div class="card"><div class="title">Refatorar store</div><div class="meta"><span>FE</span><span>2d</span></div></div>
+            <div class="card"><div class="title">Escrever testes</div><div class="meta"><span>QA</span><span>3d</span></div></div>
+          </div>
+          <a href="#" class="add">+ Adicionar tarefa</a>
+        </div>
+        <div class="column">
+          <div class="col-head"><div class="col-title">Concluídas</div><span class="badge">3</span></div>
+          <div class="cards">
+            <div class="card"><div class="title">Configurar PWA</div><div class="meta"><span>FE</span><span>Ontem</span></div></div>
+            <div class="card"><div class="title">Setup ESLint</div><div class="meta"><span>Dev</span><span>Ontem</span></div></div>
+          </div>
+          <a href="#" class="add">+ Adicionar tarefa</a>
+        </div>
+      </section>
+    </main>
+  </body>
+  </html>
+
+

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protótipos de UX - Kanban</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: linear-gradient(120deg, #0f172a 0%, #1f2937 50%, #0b1220 100%);
+        color: #e5e7eb;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 16px;
+        padding: 24px;
+      }
+      header {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        letter-spacing: 0.2px;
+      }
+      p.lead {
+        margin: 0;
+        color: #cbd5e1;
+      }
+      .grid {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+      a.card {
+        display: block;
+        padding: 18px;
+        border-radius: 14px;
+        text-decoration: none;
+        color: inherit;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        backdrop-filter: blur(10px) saturate(140%);
+        -webkit-backdrop-filter: blur(10px) saturate(140%);
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+      }
+      a.card:hover {
+        transform: translateY(-3px);
+        background: rgba(255,255,255,0.09);
+        border-color: rgba(255,255,255,0.2);
+      }
+      .title {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+      ul {
+        margin: 0;
+        padding-left: 18px;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+      footer {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: #94a3b8;
+        margin-top: 12px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Protótipos de UX — Kanban</h1>
+      <p class="lead">Escolha um visual para evoluirmos o design do app. Cada arquivo é estático e mostra um recorte da experiência proposta.</p>
+    </header>
+    <main class="grid">
+      <a class="card" href="./prototype-1-liquid-glass.html">
+        <div class="title">1) Liquid Glass (estética Apple)</div>
+        <ul>
+          <li>Translucidez, blur e highlights vibrantes</li>
+          <li>Cartões e colunas com efeito vítreo</li>
+          <li>Foco em fluidez e hierarquia suave</li>
+        </ul>
+      </a>
+      <a class="card" href="./prototype-2-neumorphic.html">
+        <div class="title">2) Neumórfico suave</div>
+        <ul>
+          <li>Superfícies elevadas com sombras macias</li>
+          <li>Tom claro, conforto visual, sem distrações</li>
+          <li>Componentes táteis e acolhedores</li>
+        </ul>
+      </a>
+      <a class="card" href="./prototype-3-contrast-focus.html">
+        <div class="title">3) Alto contraste e foco</div>
+        <ul>
+          <li>Tipografia clara e espaçamento generoso</li>
+          <li>Bordas definidas e feedback explícito</li>
+          <li>Acessibilidade e leitura acelerada</li>
+        </ul>
+      </a>
+      <a class="card" href="./prototype-4-sticky-notes.html">
+        <div class="title">4) Sticky Notes (post-its)</div>
+        <ul>
+          <li>Notas coloridas com leve rotação</li>
+          <li>Lúdico, visualmente memorável</li>
+          <li>Priorização rápida por cor</li>
+        </ul>
+      </a>
+      <a class="card" href="./prototype-5-dashboard.html">
+        <div class="title">5) Dashboard com Sidebar</div>
+        <ul>
+          <li>Resumo acima, board ao centro</li>
+          <li>Atalhos laterais e Quick Add</li>
+          <li>Fluxo para equipes e power users</li>
+        </ul>
+      </a>
+      <a class="card" href="./prototype-6-kanban-flow-exec.html">
+        <div class="title">6) Kanban — Foco / Flow / Exec</div>
+        <ul>
+          <li>Heatmap de aging, WIP efetivo e bloqueios</li>
+          <li>Overlay de dependências no board</li>
+          <li>Exec view com KPIs e forecasts</li>
+        </ul>
+      </a>
+    </main>
+    <footer>
+      Abra estes arquivos via /prototypes/ no servidor de desenvolvimento ou no build de produção.
+    </footer>
+  </body>
+  </html>
+
+

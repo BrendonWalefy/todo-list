@@ -1,13 +1,15 @@
 # Lista de Tarefas Kanban (PWA)
 
-Aplicação Kanban simples feita com React + TypeScript + Vite. Funciona offline (PWA), permite arrastar e soltar tarefas entre colunas e exportar/importar backup em JSON.
+Aplicação Kanban em React + TypeScript + Vite, com PWA e arquitetura em camadas (hexagonal/clean): domínio isolado, repositório local e shell de app. Visual e UX baseados no protótipo 6 (Foco/Flow/Exec, WIP, aging/stale, barra de ações fixa, tema claro/escuro).
 
 ## Recursos
-- Kanban com 3 colunas: A Fazer, Em Progresso e Concluídas
-- Drag-and-drop nativo
-- Persistência local (localStorage) e pedido de armazenamento persistente
-- Exportar/Importar dados em JSON
+- Kanban com colunas dinâmicas (adicionar ao final, renomear, WIP por coluna, reordenar via configurações)
+- Modos de visualização: Foco (apenas “mine”), Flow (normal) e Exec (KPIs)
+- Aging e stale: heatmap por idade e flag automática (>= 7 dias)
+- Drag-and-drop de cards entre colunas
 - PWA: instalável e offline-first
+- Persistência local (localStorage) e pedido de armazenamento persistente
+- Exportar/Importar JSON (compatível com formato antigo apenas-tarefas)
 
 ## Rodando localmente
 ```bash
@@ -16,22 +18,33 @@ npm run dev
 # abra http://localhost:5173
 ```
 
+Se a porta estiver em uso, pare execuções anteriores e rode:
+```bash
+pkill -f vite || true
+npm run dev
+```
+
 ## Build de produção
 ```bash
 npm run build
 npx serve -s dist
 ```
 
-## Deploy no GitHub Pages
-O projeto está configurado com base `'/todo-list/'` em produção. O workflow cria e publica o build na branch `gh-pages`.
+## Arquitetura (hexagonal/clean)
+- `src/domain`: entidades e serviços puros (ex.: `Task`, `Column`, `BoardService`)
+- `src/infrastructure`: repositórios/adapters (ex.: `LocalBoardRepository`)
+- `src/app`: shell, visão e orquestração (ex.: `AppShell`)
 
-URL esperada: `https://BrendonWalefy.github.io/todo-list/`
+## Uso (UI)
+- Tema: canto superior direito (🌙/☀️)
+- Barra fixa: “＋” para novo card, modos (Foco/Flow/Exec) e toggle de stale
+- Configurações: engrenagem abre janela flutuante para gerenciar colunas (◀/▶ para reordenar)
+- Novo card: define título, coluna, idade (dias), “atribuído a mim” e “bloqueado”
 
 ## PWA
-- A instalação aparece após abrir e recarregar a página uma vez
-- Em Android/Chrome: “Instalar app”
-- Em iOS/Safari: “Adicionar à Tela de Início”
+- Após abrir a página, recarregue para o prompt de instalação
+- Android/Chrome: “Instalar app”; iOS/Safari: “Adicionar à Tela de Início”
 
 ## Backup
-- Use os botões Exportar/Importar na interface para salvar/restaurar seus dados
+- Botões Exportar/Importar na interface para salvar/restaurar dados
 

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protótipo: Dashboard com Sidebar</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: #0f172a;
+        --panel-2: #111c32;
+        --card: #13203a;
+        --accent: #60a5fa;
+        --text: #e5e7eb;
+        --muted: #93a7c4;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; color: var(--text); background: var(--bg); display: grid; grid-template-rows: auto 1fr; gap: 16px; padding: 24px; }
+      header { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+      h1 { margin: 0; font-size: 18px; letter-spacing: 0.2px; }
+      .btn { padding: 8px 10px; border-radius: 10px; border: 1px solid #22314f; background: linear-gradient(180deg, #172341, #0e1b34); color: var(--text); text-decoration: none; }
+
+      .layout { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+      .sidebar { position: sticky; top: 16px; display: grid; gap: 10px; padding: 12px; border-radius: 14px; background: var(--panel); border: 1px solid #22314f; }
+      .side-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+      .nav { display: grid; gap: 6px; }
+      .nav a { padding: 8px 10px; border-radius: 10px; color: var(--text); text-decoration: none; background: #0b1428; border: 1px solid #22314f; }
+      .nav a.active { background: #142243; border-color: #2a4a8a; box-shadow: 0 0 0 2px rgba(96,165,250,0.18); }
+
+      .content { display: grid; gap: 16px; }
+      .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .kpi { padding: 12px; border-radius: 12px; background: var(--panel-2); border: 1px solid #22314f; }
+      .kpi .label { font-size: 12px; color: var(--muted); }
+      .kpi .value { font-size: 22px; font-weight: 700; }
+
+      .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .column { display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; border-radius: 12px; background: var(--panel); border: 1px solid #22314f; min-height: 420px; }
+      .col-head { display: flex; align-items: center; justify-content: space-between; }
+      .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #0a1429; border: 1px solid #22314f; }
+      .cards { display: grid; gap: 10px; }
+      .card { padding: 10px; border-radius: 10px; background: var(--card); border: 1px solid #22314f; }
+
+      .quick { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+      .quick input { padding: 10px; border-radius: 10px; border: 1px solid #22314f; background: #0b1428; color: var(--text); }
+      .quick button { padding: 10px 12px; border-radius: 10px; border: 1px solid #2a4a8a; background: #142243; color: var(--text); cursor: pointer; }
+
+      @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .board { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Kanban — Dashboard com Sidebar</h1>
+      <a class="btn" href="./index.html">Voltar</a>
+    </header>
+    <section class="layout">
+      <aside class="sidebar">
+        <div class="side-title">Navegação</div>
+        <nav class="nav">
+          <a class="active" href="#">Board</a>
+          <a href="#">Relatórios</a>
+          <a href="#">Calendário</a>
+          <a href="#">Configurações</a>
+        </nav>
+      </aside>
+      <main class="content">
+        <div class="row">
+          <div class="kpi"><div class="label">A Fazer</div><div class="value">12</div></div>
+          <div class="kpi"><div class="label">Em Progresso</div><div class="value">7</div></div>
+          <div class="kpi"><div class="label">Concluídas</div><div class="value">5</div></div>
+        </div>
+        <div class="quick">
+          <input placeholder="Nova tarefa rápida" />
+          <button>Adicionar</button>
+        </div>
+        <section class="board">
+          <div class="column">
+            <div class="col-head"><div class="col-title">A Fazer</div><span class="badge">12</span></div>
+            <div class="cards">
+              <div class="card">Definir critérios de aceitação</div>
+              <div class="card">Cronograma de entregas</div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="col-head"><div class="col-title">Em Progresso</div><span class="badge">7</span></div>
+            <div class="cards">
+              <div class="card">Revisão de arquitetura</div>
+              <div class="card">Setup de métricas</div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="col-head"><div class="col-title">Concluídas</div><span class="badge">5</span></div>
+            <div class="cards">
+              <div class="card">Pipeline CI</div>
+              <div class="card">Linting</div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </section>
+  </body>
+  </html>
+
+

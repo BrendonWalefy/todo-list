@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protótipo: Alto Contraste</title>
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --panel: #0f1621;
+        --card: #111a27;
+        --accent: #22d3ee;
+        --accent-2: #a3e635;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --danger: #fb7185;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; color: var(--text); background: var(--bg); display: grid; grid-template-rows: auto 1fr; gap: 16px; padding: 24px; }
+      header { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+      h1 { margin: 0; font-size: 20px; letter-spacing: 0.3px; }
+      .filters { display: flex; gap: 8px; }
+      .tag { padding: 8px 10px; border-radius: 10px; background: var(--panel); border: 1px solid #1f2937; color: var(--muted); }
+      .tag.active { color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.22); }
+      .btn { padding: 10px 12px; border-radius: 10px; border: 1px solid #1f2937; background: linear-gradient(180deg, #0f172a, #0b1220); color: var(--text); text-decoration: none; }
+
+      main { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 16px; }
+      .notice { padding: 12px 14px; border-radius: 10px; background: #071018; border: 1px solid #1f2937; color: var(--muted); }
+
+      .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .column { display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; border-radius: 14px; background: var(--panel); border: 1px solid #1f2937; }
+      .col-head { display: flex; align-items: center; justify-content: space-between; }
+      .col-title { font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
+      .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #0b1220; border: 1px solid #1f2937; }
+
+      .cards { display: grid; gap: 10px; }
+      .card { padding: 12px; border-radius: 12px; background: var(--card); border: 1px solid #1f2937; outline: 2px solid transparent; transition: outline-color 120ms ease, transform 120ms ease; }
+      .card:focus-within, .card:hover { outline-color: var(--accent); transform: translateY(-1px); }
+      .card .title { font-weight: 700; margin-bottom: 4px; }
+      .card .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; }
+      .card .labels { display: flex; gap: 6px; margin-top: 8px; }
+      .label { font-size: 11px; padding: 2px 6px; border-radius: 8px; border: 1px solid #1f2937; }
+      .label.info { color: var(--accent); border-color: var(--accent); }
+      .label.warn { color: var(--danger); border-color: var(--danger); }
+
+      .add { margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px dashed #334155; color: var(--muted); text-decoration: none; }
+      .add:hover { color: var(--text); border-style: solid; }
+
+      @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Kanban — Alto Contraste e Foco</h1>
+      <div class="filters">
+        <span class="tag active">Tudo</span>
+        <span class="tag">Hoje</span>
+        <span class="tag">Atrasado</span>
+        <a class="btn" href="./index.html">Voltar</a>
+      </div>
+    </header>
+    <main>
+      <div class="notice">Foco em legibilidade, espaçamento claro e estados de foco/hover bem definidos para acessibilidade e velocidade.</div>
+      <section class="board">
+        <div class="column">
+          <div class="col-head"><div class="col-title">A Fazer</div><span class="badge">12</span></div>
+          <div class="cards">
+            <label class="card">
+              <div class="title">Auditar contrastes do app</div>
+              <div class="meta"><span>A11y</span><span>Hoje</span></div>
+              <div class="labels"><span class="label info">AA</span><span class="label warn">Pendente</span></div>
+            </label>
+            <div class="card">
+              <div class="title">Padronizar tipografia</div>
+              <div class="meta"><span>Design System</span><span>Amanhã</span></div>
+            </div>
+          </div>
+          <a href="#" class="add">+ Adicionar tarefa</a>
+        </div>
+        <div class="column">
+          <div class="col-head"><div class="col-title">Em Progresso</div><span class="badge">4</span></div>
+          <div class="cards">
+            <div class="card"><div class="title">Documentar tokens</div><div class="meta"><span>DS</span><span>2d</span></div></div>
+            <div class="card"><div class="title">Refinar foco dos inputs</div><div class="meta"><span>UI</span><span>3d</span></div></div>
+          </div>
+          <a href="#" class="add">+ Adicionar tarefa</a>
+        </div>
+        <div class="column">
+          <div class="col-head"><div class="col-title">Concluídas</div><span class="badge">6</span></div>
+          <div class="cards">
+            <div class="card"><div class="title">Configurar variáveis CSS</div><div class="meta"><span>FE</span><span>Ontem</span></div></div>
+            <div class="card"><div class="title">Revisão de ícones</div><div class="meta"><span>UI</span><span>Ontem</span></div></div>
+          </div>
+          <a href="#" class="add">+ Adicionar tarefa</a>
+        </div>
+      </section>
+    </main>
+  </body>
+  </html>
+
+

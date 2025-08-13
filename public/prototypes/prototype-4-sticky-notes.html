@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protótipo: Sticky Notes</title>
+    <style>
+      :root {
+        --bg: #fef9c3;
+        --paper: #fff7ed;
+        --ink: #1f2937;
+        --tape: #fde68a;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+        color: var(--ink);
+        background: repeating-linear-gradient(90deg, #fef9c3, #fef9c3 40px, #fef08a 40px, #fef08a 41px);
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 16px;
+        padding: 24px;
+      }
+      header { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+      h1 { margin: 0; font-size: 22px; }
+      .btn { padding: 8px 12px; border-radius: 10px; color: var(--ink); text-decoration: none; background: #fef3c7; border: 1px solid #f59e0b; }
+
+      main { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: start; }
+      .note {
+        position: relative;
+        transform: rotate(var(--r, -1.5deg));
+        padding: 16px 14px 18px;
+        border-radius: 6px 6px 12px 12px;
+        background: var(--paper);
+        border: 1px solid #f59e0b;
+        box-shadow: 0 14px 26px rgba(0,0,0,0.18);
+      }
+      .note::before {
+        content: "";
+        position: absolute;
+        top: -10px; left: 50%; transform: translateX(-50%) rotate(2deg);
+        width: 60px; height: 18px; border-radius: 2px;
+        background: var(--tape);
+        box-shadow: 0 3px rgba(0,0,0,0.12) inset;
+      }
+      .title { font-weight: 800; margin-bottom: 8px; }
+      .meta { font-size: 12px; opacity: 0.7; }
+
+      .group { display: grid; gap: 16px; }
+      .group .head { font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
+
+      @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Kanban — Sticky Notes</h1>
+      <a class="btn" href="./index.html">Voltar</a>
+    </header>
+    <main>
+      <section class="group" style="--r:-1.5deg">
+        <div class="head">A Fazer</div>
+        <article class="note"><div class="title">Pesquisar referências visuais</div><div class="meta">Design — Hoje</div></article>
+        <article class="note" style="--r:1.2deg"><div class="title">Planejar sprint</div><div class="meta">PM — Amanhã</div></article>
+        <article class="note" style="--r:-2deg"><div class="title">Escrever brief</div><div class="meta">Conteúdo — Amanhã</div></article>
+      </section>
+      <section class="group" style="--r:0.8deg">
+        <div class="head">Em Progresso</div>
+        <article class="note"><div class="title">Protótipo de navegação</div><div class="meta">UX — 2d</div></article>
+        <article class="note" style="--r:-1deg"><div class="title">Grid responsivo</div><div class="meta">UI — 3d</div></article>
+      </section>
+      <section class="group" style="--r:-0.4deg">
+        <div class="head">Concluídas</div>
+        <article class="note"><div class="title">Reunião de kick-off</div><div class="meta">Equipe — Ontem</div></article>
+        <article class="note" style="--r:1.6deg"><div class="title">Setup repo</div><div class="meta">Dev — Ontem</div></article>
+      </section>
+    </main>
+  </body>
+  </html>
+
+

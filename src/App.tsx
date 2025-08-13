@@ -1,31 +1,69 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
-type TaskStatus = 'todo' | 'doing' | 'done'
+type Column = {
+  id: string
+  title: string
+  wipLimit: number
+}
 
 type Task = {
   id: string
   title: string
-  status: TaskStatus
+  status: string
   createdAt: string
-  // Backward compatibility with previous schema
+  doneAt?: string
+  mine?: boolean
+  blocked?: boolean
   completed?: boolean
 }
 
-const STORAGE_KEY = 'todo-list.tasks'
+type Mode = 'focus' | 'flow' | 'exec'
 
-function readTasksFromStorage(): Task[] {
+const STORAGE_TASKS = 'todo-list.tasks'
+const STORAGE_COLS = 'todo-list.columns'
+const STORAGE_THEME = 'todo-list.theme'
+
+function defaultColumns(): Column[] {
+  return [
+    { id: 'todo', title: 'A Fazer', wipLimit: 3 },
+    { id: 'doing', title: 'Em Progresso', wipLimit: 2 },
+    { id: 'done', title: 'Concluídas', wipLimit: 4 },
+  ]
+}
+
+function readColumnsFromStorage(): Column[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_COLS)
+    if (!raw) return defaultColumns()
+    const parsed = JSON.parse(raw) as Column[]
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultColumns()
+    return parsed
+  } catch {
+    return defaultColumns()
+  }
+}
+
+function writeColumnsToStorage(columns: Column[]) {
+  try {
+    localStorage.setItem(STORAGE_COLS, JSON.stringify(columns))
+  } catch {}
+}
+
+function readTasksFromStorage(columns: Column[]): Task[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_TASKS)
     if (!raw) return []
     const parsed = JSON.parse(raw) as Task[]
     if (!Array.isArray(parsed)) return []
+    const validStatuses = new Set(columns.map((c) => c.id))
     return parsed
       .filter(Boolean)
-      .map((t) => ({
-        ...t,
-        status: (t as any).status ?? ((t as any).completed ? 'done' : 'todo'),
-      }))
+      .map((t) => {
+        const status = (t as any).status ?? ((t as any).completed ? 'done' : 'todo')
+        const normalized = validStatuses.has(status) ? status : columns[0]?.id ?? 'todo'
+        return { ...t, status: normalized }
+      })
   } catch {
     return []
   }
@@ -33,107 +71,112 @@ function readTasksFromStorage(): Task[] {
 
 function writeTasksToStorage(tasks: Task[]) {
   try {
-    // Persist status and helpful completed flag for compatibility
     const serialized = tasks.map((t) => ({ ...t, completed: t.status === 'done' }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized))
-  } catch {
-    // ignore write errors
-  }
+    localStorage.setItem(STORAGE_TASKS, JSON.stringify(serialized))
+  } catch {}
+}
+
+function useTheme(): [string, (t: string) => void] {
+  const [theme, setTheme] = useState<string>(() => {
+    const stored = localStorage.getItem(STORAGE_THEME)
+    if (stored === 'dark' || stored === 'light') return stored
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+    return prefersLight ? 'light' : 'dark'
+  })
+  useEffect(() => {
+    document.body.setAttribute('data-theme', theme)
+    localStorage.setItem(STORAGE_THEME, theme)
+  }, [theme])
+  return [theme, setTheme]
 }
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>(() => readTasksFromStorage())
-  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [columns, setColumns] = useState<Column[]>(() => readColumnsFromStorage())
+  const [tasks, setTasks] = useState<Task[]>(() => readTasksFromStorage(readColumnsFromStorage()))
+  const [mode, setMode] = useState<Mode>('flow')
+  const [staleEnabled, setStaleEnabled] = useState<boolean>(true)
+  const [theme, setTheme] = useTheme()
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isColsOpen, setIsColsOpen] = useState(false)
 
   useEffect(() => {
     writeTasksToStorage(tasks)
   }, [tasks])
 
-  // Tenta tornar o armazenamento mais persistente (quando suportado)
+  useEffect(() => {
+    writeColumnsToStorage(columns)
+  }, [columns])
+
+  // Tenta persistência adicional quando suportado
   useEffect(() => {
     const storageManager: any = (navigator as any).storage
     if (storageManager && typeof storageManager.persist === 'function') {
       try {
         storageManager.persist()
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
   }, [])
 
-  const remainingCount = useMemo(() => tasks.filter((t) => t.status !== 'done').length, [tasks])
-
-  const columns: { key: TaskStatus; title: string }[] = useMemo(
-    () => [
-      { key: 'todo', title: 'A Fazer' },
-      { key: 'doing', title: 'Em Progresso' },
-      { key: 'done', title: 'Concluídas' },
-    ],
-    [],
-  )
-
-  function handleAddTask(e: React.FormEvent) {
-    e.preventDefault()
-    const title = newTaskTitle.trim()
-    if (!title) return
-    const task: Task = {
-      id: crypto.randomUUID(),
-      title,
-      status: 'todo',
-      createdAt: new Date().toISOString(),
-    }
-    setTasks((prev) => [task, ...prev])
-    setNewTaskTitle('')
-  }
-
-  function handleDeleteTask(taskId: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId))
-  }
-
-  function handleClearCompleted() {
-    setTasks((prev) => prev.filter((t) => t.status !== 'done'))
-  }
-
-  function handleAdvance(taskId: string) {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t
-        if (t.status === 'todo') return { ...t, status: 'doing' }
-        if (t.status === 'doing') return { ...t, status: 'done' }
-        return t
-      }),
-    )
-  }
-
-  function handleMoveTo(taskId: string, status: TaskStatus) {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)))
-  }
-
-  const DND_MIME = 'application/x.task-id'
+  const dndMime = 'application/x.task-id'
 
   function handleDragStart(e: React.DragEvent, taskId: string) {
-    e.dataTransfer.setData(DND_MIME, taskId)
+    e.dataTransfer.setData(dndMime, taskId)
     e.dataTransfer.effectAllowed = 'move'
   }
-
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
   }
-
-  function handleDrop(e: React.DragEvent, status: TaskStatus) {
+  function handleDrop(e: React.DragEvent, status: string) {
     e.preventDefault()
-    const taskId = e.dataTransfer.getData(DND_MIME)
+    const taskId = e.dataTransfer.getData(dndMime)
     if (!taskId) return
-    handleMoveTo(taskId, status)
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status, doneAt: status === 'done' ? new Date().toISOString() : t.doneAt } : t)))
   }
 
-  // Backup e restauração (Exportar/Importar)
+  function addTask(newTask: { title: string; columnId: string; ageDays?: number; mine?: boolean; blocked?: boolean }) {
+    const now = new Date()
+    const created = new Date(now)
+    if (newTask.ageDays && newTask.ageDays > 0) created.setDate(now.getDate() - newTask.ageDays)
+    const task: Task = {
+      id: crypto.randomUUID(),
+      title: newTask.title,
+      status: newTask.columnId,
+      createdAt: created.toISOString(),
+      mine: !!newTask.mine,
+      blocked: !!newTask.blocked,
+    }
+    setTasks((prev) => [task, ...prev])
+  }
+
+  function deleteTask(taskId: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId))
+  }
+
+  function clearDone() {
+    setTasks((prev) => prev.filter((t) => t.status !== 'done'))
+  }
+
+  function getAgeDays(iso: string) {
+    const d = new Date(iso)
+    const diff = Date.now() - d.getTime()
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
+  }
+
+  const kpi = useMemo(() => {
+    const totalWip = tasks.filter((t) => t.status !== 'done').length
+    const blocked = tasks.filter((t) => t.blocked).length
+    const since = (days: number) => {
+      const cut = Date.now() - days * 24 * 60 * 60 * 1000
+      return tasks.filter((t) => t.status === 'done' && t.doneAt && new Date(t.doneAt).getTime() >= cut).length
+    }
+    return { totalWip, blocked, th7: since(7), th14: since(14), th30: since(30) }
+  }, [tasks])
+
+  // Import/Export
   function handleExport() {
-    const data = tasks
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json;charset=utf-8',
-    })
+    const data = { columns, tasks }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     const ts = new Date()
@@ -146,7 +189,6 @@ function App() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
-
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   function triggerImport() {
     fileInputRef.current?.click()
@@ -157,31 +199,39 @@ function App() {
     try {
       const text = await file.text()
       const parsed = JSON.parse(text)
-      if (!Array.isArray(parsed)) throw new Error('Formato inválido')
-      const incoming: Task[] = parsed
-        .filter(Boolean)
-        .map((t: any) => ({
-          id: String(t.id ?? crypto.randomUUID()),
-          title: String(t.title ?? ''),
-          status: (t.status as TaskStatus) ?? (t.completed ? 'done' : 'todo'),
-          createdAt: String(t.createdAt ?? new Date().toISOString()),
-        }))
-        .filter((t) => t.title.trim().length > 0)
-
-      // mescla por id (substitui existentes e adiciona novos)
-      setTasks((prev) => {
-        const byId = new Map(prev.map((t) => [t.id, t]))
-        for (const it of incoming) byId.set(it.id, it)
-        // mantém ordem: itens recém-importados primeiro
-        const importedIds = new Set(incoming.map((t) => t.id))
-        const merged: Task[] = [
-          ...incoming,
-          ...prev.filter((t) => !importedIds.has(t.id)),
-        ]
-        // garante consistência com o Map em caso de conflito
-        return merged.map((t) => byId.get(t.id)!)
-      })
-      // limpa input para permitir importar o mesmo arquivo novamente se quiser
+      if (parsed && Array.isArray(parsed.columns) && Array.isArray(parsed.tasks)) {
+        const cols: Column[] = parsed.columns
+        const valid = new Set(cols.map((c) => c.id))
+        const imported: Task[] = parsed.tasks
+          .filter(Boolean)
+          .map((t: any) => ({
+            id: String(t.id ?? crypto.randomUUID()),
+            title: String(t.title ?? ''),
+            status: valid.has(t.status) ? String(t.status) : (cols[0]?.id ?? 'todo'),
+            createdAt: String(t.createdAt ?? new Date().toISOString()),
+            doneAt: t.doneAt ? String(t.doneAt) : undefined,
+            mine: Boolean(t.mine),
+            blocked: Boolean(t.blocked),
+          }))
+        setColumns(cols)
+        setTasks(imported)
+      } else if (Array.isArray(parsed)) {
+        // compat: apenas tasks
+        const imported: Task[] = parsed
+          .filter(Boolean)
+          .map((t: any) => ({
+            id: String(t.id ?? crypto.randomUUID()),
+            title: String(t.title ?? ''),
+            status: String(t.status ?? (t.completed ? 'done' : 'todo')),
+            createdAt: String(t.createdAt ?? new Date().toISOString()),
+            doneAt: t.doneAt ? String(t.doneAt) : undefined,
+            mine: Boolean(t.mine),
+            blocked: Boolean(t.blocked),
+          }))
+        setTasks(imported)
+      } else {
+        throw new Error('Formato inválido')
+      }
       e.target.value = ''
       alert('Importação concluída com sucesso!')
     } catch (err) {
@@ -190,96 +240,241 @@ function App() {
     }
   }
 
+  // Manage columns modal helpers
+  function saveColumnsEdits(edits: { index?: number; remove?: boolean; newCol?: { title: string; wipLimit: number }; rename?: string; wip?: number; move?: 'left' | 'right' }[]) {
+    setColumns((prev) => {
+      let cols = [...prev]
+      edits.forEach((e) => {
+        if (e.newCol) {
+          cols = [...cols, { id: crypto.randomUUID(), title: e.newCol.title, wipLimit: e.newCol.wipLimit }]
+        } else if (typeof e.index === 'number') {
+          if (e.remove) {
+            const col = cols[e.index]
+            const dst = e.index === 0 ? (cols[1] ? cols[1].id : col.id) : cols[0].id
+            setTasks((prevTasks) => prevTasks.map((t) => (t.status === col.id ? { ...t, status: dst } : t)))
+            cols.splice(e.index, 1)
+          } else {
+            if (typeof e.wip === 'number') cols[e.index] = { ...cols[e.index], wipLimit: Math.max(0, e.wip) }
+            if (typeof e.rename === 'string') cols[e.index] = { ...cols[e.index], title: e.rename }
+            if (e.move === 'left' && e.index > 0) {
+              const [c] = cols.splice(e.index, 1)
+              cols.splice(e.index - 1, 0, c)
+            }
+            if (e.move === 'right' && e.index < cols.length - 1) {
+              const [c] = cols.splice(e.index, 1)
+              cols.splice(e.index + 1, 0, c)
+            }
+          }
+        }
+      })
+      return cols
+    })
+  }
+
   return (
     <div className="app">
-      <h1 className="app__title">Lista de Tarefas</h1>
-
-      <form className="todo-form" onSubmit={handleAddTask}>
-        <input
-          className="todo-input"
-          type="text"
-          placeholder="Adicionar nova tarefa..."
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          aria-label="Título da tarefa"
-        />
-        <button className="todo-add" type="submit" disabled={!newTaskTitle.trim()}>
-          Adicionar
-        </button>
-      </form>
-
-      <div className="board-meta">
-        <div className="counter" aria-live="polite">
-          {remainingCount} restante{remainingCount === 1 ? '' : 's'}
+      <header className="app__header">
+        <div className="brand"><span className="dot" /> <h1>Kanban</h1></div>
+        <div className="header-actions">
+          <div className="theme-switch" role="group" aria-label="Tema">
+            <button className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')} aria-pressed={theme === 'dark'} title="Tema escuro">🌙</button>
+            <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')} aria-pressed={theme === 'light'} title="Tema claro">☀️</button>
+          </div>
+          <button className="icon-btn" onClick={() => setIsColsOpen(true)} title="Gerenciar colunas" aria-label="Gerenciar colunas">⚙️</button>
         </div>
-        <div className="footer-actions" role="group" aria-label="Ações de backup e limpeza">
+      </header>
+
+      <section className="board-actions">
+        <button className="icon-btn" onClick={() => setIsAddOpen(true)} title="Adicionar card" aria-label="Adicionar card">＋</button>
+        <div className="modes">
+          <button className={mode === 'focus' ? 'active' : ''} onClick={() => setMode('focus')} aria-pressed={mode === 'focus'}>Foco</button>
+          <button className={mode === 'flow' ? 'active' : ''} onClick={() => setMode('flow')} aria-pressed={mode === 'flow'}>Flow</button>
+          <button className={mode === 'exec' ? 'active' : ''} onClick={() => setMode('exec')} aria-pressed={mode === 'exec'}>Exec</button>
+        </div>
+        <label className="toggle"><input type="checkbox" checked={staleEnabled} onChange={(e) => setStaleEnabled(e.target.checked)} />Marcar stale</label>
+        <div className="spacer" />
+        <div className="footer-actions" role="group" aria-label="Backup">
           <button onClick={handleExport}>Exportar</button>
           <button onClick={triggerImport}>Importar</button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            onChange={handleImportFile}
-            style={{ display: 'none' }}
-          />
-          <button className="clear-completed" onClick={handleClearCompleted}>
-            Limpar concluídas
-          </button>
+          <input ref={fileInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{ display: 'none' }} />
+          <button onClick={clearDone}>Limpar concluídas</button>
         </div>
-      </div>
+      </section>
 
-      <div className="board">
-        {columns.map((col) => {
-          const items = tasks.filter((t) => t.status === col.key)
-          return (
-            <section
-              key={col.key}
-              className={`column column--${col.key}`}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, col.key)}
-              aria-label={`Coluna ${col.title}`}
-            >
-              <header className="column__header">
-                <h2 className="column__title">{col.title}</h2>
-                <span className="column__count">{items.length}</span>
-              </header>
-              <ul className="column__list">
-                {items.length === 0 && <li className="empty">Sem itens</li>}
-                {items.map((task) => (
-                  <li
-                    key={task.id}
-                    className="card"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    aria-label={task.title}
-                  >
-                    <div className="card__body">
-                      <span className="card__title">{task.title}</span>
-                    </div>
-                    <div className="card__actions">
-                      {task.status !== 'done' ? (
-                        <button
-                          className="card__action"
-                          title="Avançar"
-                          onClick={() => handleAdvance(task.id)}
-                        >
-                          ➜
-                        </button>
-                      ) : null}
-                      <button
-                        className="card__action delete"
-                        title="Excluir"
-                        onClick={() => handleDeleteTask(task.id)}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )
-        })}
+      {mode !== 'exec' && (
+        <div className="board" aria-label="Board Kanban">
+          {columns.map((col) => {
+            const items = tasks.filter((t) => t.status === col.id)
+            const visibleItems = mode === 'focus' ? items.filter((t) => t.mine) : items
+            const over = col.wipLimit > 0 && visibleItems.length > col.wipLimit
+            return (
+              <section key={col.id} className="column" data-wip-limit={col.wipLimit} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, col.id)} aria-label={`Coluna ${col.title}`}>
+                <header className="column__header">
+                  <h2 className="column__title">{col.title}</h2>
+                  <div className={`wip ${over ? 'over' : ''}`}><span className="tag">{visibleItems.length}/{col.wipLimit}</span></div>
+                </header>
+                <ul className="column__list">
+                  {visibleItems.length === 0 && <li className="empty">Sem itens</li>}
+                  {visibleItems.map((task) => {
+                    const age = getAgeDays(task.createdAt)
+                    const isStale = staleEnabled && age >= 7
+                    const heatClass = age >= 7 ? 'heat-3' : age >= 5 ? 'heat-2' : age >= 3 ? 'heat-1' : ''
+                    return (
+                      <li key={task.id} className={`card ${heatClass} ${task.mine ? 'mine' : ''} ${task.blocked ? 'blocked' : ''}`} draggable onDragStart={(e) => handleDragStart(e, task.id)} aria-label={task.title}>
+                        <div className="card__body">
+                          <span className="card__title">{task.title}</span>
+                          <div className="card__meta">
+                            {task.blocked && <span className="badge blocked">bloqueado</span>}
+                            {isStale && <span className="badge stale">stale</span>}
+                            <span className="age">{age}d</span>
+                          </div>
+                        </div>
+                        <div className="card__actions">
+                          <button className="card__action delete" title="Excluir" onClick={() => deleteTask(task.id)}>✕</button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            )
+          })}
+        </div>
+      )}
+
+      {mode === 'exec' && (
+        <section className="exec">
+          <div className="tile"><div className="label">WIP atual</div><div className="value">{kpi.totalWip}</div></div>
+          <div className="tile"><div className="label">Throughput (7/14/30d)</div><div className="value">{kpi.th7} / {kpi.th14} / {kpi.th30}</div></div>
+          <div className="tile"><div className="label">Bloqueados</div><div className="value">{kpi.blocked}</div></div>
+          <div className="tile forecast">
+            <div>
+              <div className="label">Forecast (p50)</div>
+              <div className="value">—</div>
+              <div className="hint">Monte Carlo não implementado neste MVP</div>
+            </div>
+            <div>
+              <div className="label">Forecast (p85)</div>
+              <div className="value">—</div>
+              <div className="hint">Requer histórico adicional</div>
+            </div>
+            <div>
+              <div className="label">Forecast (p95)</div>
+              <div className="value">—</div>
+              <div className="hint">Planejado para próxima etapa</div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {isAddOpen && (
+        <div className="modal-backdrop" onClick={(e) => e.currentTarget === e.target && setIsAddOpen(false)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-add-title">
+            <h2 id="modal-add-title">Novo card</h2>
+            <AddCardForm columns={columns} onCancel={() => setIsAddOpen(false)} onSubmit={(data) => { addTask(data); setIsAddOpen(false) }} />
+          </div>
+        </div>
+      )}
+
+      {isColsOpen && (
+        <div className="modal-backdrop" onClick={(e) => e.currentTarget === e.target && setIsColsOpen(false)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-cols-title">
+            <h2 id="modal-cols-title">Gerenciar colunas</h2>
+            <ManageColumns columns={columns} onClose={() => setIsColsOpen(false)} onSave={(edits) => { saveColumnsEdits(edits); setIsColsOpen(false) }} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AddCardForm(props: { columns: Column[]; onCancel: () => void; onSubmit: (data: { title: string; columnId: string; ageDays?: number; mine?: boolean; blocked?: boolean }) => void }) {
+  const [title, setTitle] = useState('')
+  const [columnId, setColumnId] = useState(props.columns[0]?.id ?? '')
+  const [age, setAge] = useState(0)
+  const [mine, setMine] = useState(true)
+  const [blocked, setBlocked] = useState(false)
+  return (
+    <form className="form" onSubmit={(e) => { e.preventDefault(); if (!title.trim()) return; props.onSubmit({ title: title.trim(), columnId, ageDays: age, mine, blocked }) }}>
+      <div className="form-row"><label>Título<br /><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex.: Implementar login" /></label></div>
+      <div className="form-row inline">
+        <label>Coluna<br />
+          <select value={columnId} onChange={(e) => setColumnId(e.target.value)}>
+            {props.columns.map((c) => (<option key={c.id} value={c.id}>{c.title}</option>))}
+          </select>
+        </label>
+        <label>Idade (dias)<br />
+          <input type="number" min={0} value={age} onChange={(e) => setAge(Number(e.target.value))} />
+        </label>
+      </div>
+      <div className="form-row checks">
+        <label><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Atribuir a mim</label>
+        <label><input type="checkbox" checked={blocked} onChange={(e) => setBlocked(e.target.checked)} /> Bloqueado</label>
+      </div>
+      <div className="actions">
+        <button type="button" className="btn" onClick={props.onCancel}>Cancelar</button>
+        <button type="submit" className="btn">Adicionar</button>
+      </div>
+    </form>
+  )
+}
+
+function ManageColumns(props: { columns: Column[]; onClose: () => void; onSave: (edits: { index?: number; remove?: boolean; newCol?: { title: string; wipLimit: number }; rename?: string; wip?: number; move?: 'left' | 'right' }[]) => void }) {
+  const [rows, setRows] = useState<Array<{ title: string; wip: number; index?: number; remove?: boolean; isNew?: boolean }>>(
+    () => props.columns.map((c, i) => ({ title: c.title, wip: c.wipLimit, index: i }))
+  )
+  function addRow() { setRows((prev) => [...prev, { title: 'Nova coluna', wip: 3, isNew: true }]) }
+  function removeRow(i: number) { setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, remove: true } : r))) }
+  function move(i: number, dir: -1 | 1) {
+    setRows((prev) => {
+      const arr = [...prev]
+      const j = i + dir
+      if (j < 0 || j >= arr.length) return arr
+      const [it] = arr.splice(i, 1)
+      arr.splice(j, 0, it)
+      return arr
+    })
+  }
+  function save() {
+    const edits: { index?: number; remove?: boolean; newCol?: { title: string; wipLimit: number }; rename?: string; wip?: number; move?: 'left' | 'right' }[] = []
+    rows.forEach((r) => {
+      if (r.isNew) edits.push({ newCol: { title: r.title.trim() || 'Nova coluna', wipLimit: Math.max(0, r.wip) } })
+    })
+    props.columns.forEach((c, i) => {
+      const row = rows.find((_, idx) => idx < props.columns.length && rows[idx].index === i) || rows[i]
+      if (!row) return
+      if (row.remove) edits.push({ index: i, remove: true })
+      if (row.wip !== c.wipLimit) edits.push({ index: i, wip: row.wip })
+      if (row.title.trim() !== c.title) edits.push({ index: i, rename: row.title.trim() })
+    })
+    // Moves: compare order by original indices
+    const originalOrder = props.columns.map((_, i) => i)
+    const currentOrder = rows.map((r) => (typeof r.index === 'number' ? r.index : Infinity))
+    originalOrder.forEach((origIdx, position) => {
+      const currPos = currentOrder.indexOf(origIdx)
+      if (currPos === -1) return
+      const delta = currPos - position
+      if (delta < 0) edits.push({ index: origIdx, move: 'left' })
+      if (delta > 0) edits.push({ index: origIdx, move: 'right' })
+    })
+    props.onSave(edits)
+  }
+  return (
+    <div className="cols-editor">
+      {rows.map((r, i) => (
+        <div key={i} className="row" style={{ opacity: r.remove ? 0.6 : 1 }}>
+          <input className="col-name" type="text" value={r.title} onChange={(e) => setRows((prev) => prev.map((x, idx) => (idx === i ? { ...x, title: e.target.value } : x)))} />
+          <input className="col-wip" type="number" min={0} value={r.wip} onChange={(e) => setRows((prev) => prev.map((x, idx) => (idx === i ? { ...x, wip: Number(e.target.value) } : x)))} />
+          <button className="icon-btn" onClick={() => move(i, -1)} title="Mover para a esquerda" aria-label="Mover para a esquerda">◀</button>
+          <button className="icon-btn" onClick={() => move(i, 1)} title="Mover para a direita" aria-label="Mover para a direita">▶</button>
+          <button className="icon-btn remove" onClick={() => removeRow(i)} title="Remover" aria-label="Remover">🗑️</button>
+        </div>
+      ))}
+      <div className="actions">
+        <button className="btn" onClick={addRow}>Adicionar coluna</button>
+        <span style={{ flex: 1 }} />
+        <button className="btn" onClick={props.onClose}>Fechar</button>
+        <button className="btn" onClick={save}>Salvar</button>
       </div>
     </div>
   )
